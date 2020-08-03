@@ -1,9 +1,9 @@
 import numpy as np
 from collections import defaultdict
 from functools import partial
+from typing import DefaultDict
 
-
-def create_calib_dict(calib_paths):
+def create_calib_dict(calib_paths: str):
     input_calib = defaultdict(str)
     output_calib = defaultdict(partial(np.ndarray, 0, dtype=np.float32))
 

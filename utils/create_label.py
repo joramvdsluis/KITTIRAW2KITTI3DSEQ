@@ -2,11 +2,11 @@ import numpy as np
 from utils.parseTrackletXML import parseXML
 from collections import defaultdict
 from utils.write_files import write_txt_to_file
-
+from typing import List, DefaultDict
 
 
 def xyz_camera_to_lidar_coordinate(calib_dict, lidar_points):
-    lidar_points_hom= np.hstack((lidar_points, np.ones((lidar_points.shape[0], 1), dtype=np.float32)))
+    lidar_points_hom = np.hstack((lidar_points, np.ones((lidar_points.shape[0], 1), dtype=np.float32)))
 
     R0_ext = np.hstack((calib_dict['R0_rect'].reshape(3, 3), np.zeros((3, 1), dtype=np.float32)))  # (3, 4)
     R0_ext = np.vstack((R0_ext, np.zeros((1, 4), dtype=np.float32)))  # (4, 4)
@@ -18,6 +18,7 @@ def xyz_camera_to_lidar_coordinate(calib_dict, lidar_points):
 
     return pts_lidar[:, 0:3]
 
+
 def xyz_lidar_to_camera_coordinate(calib_dict, lidar_points):
     """
     input: (N,3) array where N is the number of xyz lidar labels (example: lidar_points=np.array([[15.497332336633916, 8.9680576169198734, -1.7421763681726727]]) )
@@ -25,7 +26,8 @@ def xyz_lidar_to_camera_coordinate(calib_dict, lidar_points):
     """
 
     lidar_points_hom = np.hstack((lidar_points, np.ones((lidar_points.shape[0], 1), dtype=np.float32)))
-    camera_coord_lidar_points = np.dot(lidar_points_hom, np.dot(calib_dict['Tr_velo_to_cam'].reshape(3, 4).T, calib_dict['R0_rect'].reshape(3, 3).T))
+    camera_coord_lidar_points = np.dot(lidar_points_hom, np.dot(calib_dict['Tr_velo_to_cam'].reshape(3, 4).T,
+                                                                calib_dict['R0_rect'].reshape(3, 3).T))
 
     return camera_coord_lidar_points
 
@@ -57,7 +59,7 @@ def boxes3d_to_corners3d_camera(boxes3d, bottom_center=True):
     ry = boxes3d[:, 6]
     zeros, ones = np.zeros(ry.size, dtype=np.float32), np.ones(ry.size, dtype=np.float32)
     rot_list = np.array([[np.cos(ry), zeros, -np.sin(ry)],
-                         [zeros,      ones,        zeros],
+                         [zeros, ones, zeros],
                          [np.sin(ry), zeros, np.cos(ry)]])  # (3, 3, N)
     R_list = np.transpose(rot_list, (2, 0, 1))  # (N, 3, 3)
 
@@ -75,6 +77,7 @@ def boxes3d_to_corners3d_camera(boxes3d, bottom_center=True):
     corners = np.concatenate((x.reshape(-1, 8, 1), y.reshape(-1, 8, 1), z.reshape(-1, 8, 1)), axis=2)
 
     return corners.astype(np.float32)
+
 
 # Adapted from PCDet box_utils.py
 def boxes3d_camera_to_imageboxes(boxes3d, calib_dict, image_shape=None):
@@ -99,6 +102,7 @@ def boxes3d_camera_to_imageboxes(boxes3d, calib_dict, image_shape=None):
 
     return boxes2d_image
 
+
 # Adapted from PCDet box_utils.py
 def rect_to_img(pts_rect, calib_dict):
     """
@@ -106,17 +110,16 @@ def rect_to_img(pts_rect, calib_dict):
     :return pts_img: (N, 2)
     """
     pts_rect_hom = np.hstack((pts_rect, np.ones((pts_rect.shape[0], 1), dtype=np.float32)))
-    pts_2d_hom = np.dot(pts_rect_hom, calib_dict['P2'].reshape(3,4).T)
+    pts_2d_hom = np.dot(pts_rect_hom, calib_dict['P2'].reshape(3, 4).T)
     pts_img = (pts_2d_hom[:, 0:2].T / pts_rect_hom[:, 2]).T  # (N, 2)
-    pts_rect_depth = pts_2d_hom[:, 2] - calib_dict['P2'].reshape(3,4).T[3, 2]  # depth in rect camera coord
+    pts_rect_depth = pts_2d_hom[:, 2] - calib_dict['P2'].reshape(3, 4).T[3, 2]  # depth in rect camera coord
     return pts_img, pts_rect_depth
 
 
+def label_2_text(kitti_labels_dicts, frame_nr: int) -> str:
+    create_kitti_labels = ''
 
-def label_2_text(kitti_labels_dicts,frame_nr):
-    create_kitti_labels=''
-
-    #loop over all labels in one frame:
+    # loop over all labels in one frame:
     for kitti_label_dict in kitti_labels_dicts:
         assert frame_nr == kitti_label_dict['frame_nr'], "WARNING: frame of label and frame do not match!!"
         create_kitti_labels += ('{} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {}\n'.format(
@@ -140,29 +143,11 @@ def label_2_text(kitti_labels_dicts,frame_nr):
             kitti_label_dict['frame_nr']
         ))
 
-    #return frame
+    # return frame
     return create_kitti_labels
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-def get_labels_from_drive_xml(xml_path, calib_dict):
+def get_labels_from_drive_xml(xml_path: str, calib_dict):
     create_kitti_labels = ''
     TRUNC_IN_IMAGE = 0
     TRUNC_TRUNCATED = 1
@@ -170,15 +155,12 @@ def get_labels_from_drive_xml(xml_path, calib_dict):
 
     tracklets = parseXML(xml_path)
 
-
     # loop over tracklets per drive
     for iTracklet, tracklet in enumerate(tracklets):
         # print('tracklet {0: 3d}: {1}'.format(iTracklet, tracklet))
 
         # this part is inspired by kitti object development kit matlab code: computeBox3D
         h, w, l = tracklet.size
-
-
 
         """"
                 #Values    Name      Description
@@ -208,39 +190,30 @@ def get_labels_from_drive_xml(xml_path, calib_dict):
         dims = tracklet.size
 
         # add: ID
-        id = hash(str(tracklet.size)+str(xml_path)+str(iTracklet))
+        id = hash(str(tracklet.size) + str(xml_path) + str(iTracklet))
 
-
-        for tracklet_nr in range(0,tracklet.trans.shape[0]):
-
-
+        for tracklet_nr in range(0, tracklet.trans.shape[0]):
             # truncated
             truncated = tracklet.truncs[tracklet_nr]
 
             # occluded [occlusion state, is this an occlusion keyframe]
             occluded = tracklet.occs[tracklet_nr, 0]
 
-
-
-
-
-
             # location
-            loc_lidar=tracklet.trans[tracklet_nr, :]
-            x_lidar, y_lidar, z_lidar=loc_lidar
+            loc_lidar = tracklet.trans[tracklet_nr, :]
+            x_lidar, y_lidar, z_lidar = loc_lidar
             [loc_camera] = xyz_lidar_to_camera_coordinate(calib_dict, np.array([loc_lidar]))
 
             # rotation_y
-            rot_y_cam = ((np.matmul(np.array([tracklet.rots[tracklet_nr, :]]), calib_dict['Tr_velo_to_cam'].reshape(3, 4)) + np.pi / 2)[0][
+            rot_y_cam = ((np.matmul(np.array([tracklet.rots[tracklet_nr, :]]),
+                                    calib_dict['Tr_velo_to_cam'].reshape(3, 4)) + np.pi / 2)[0][
                              1] + np.pi) % (2 * np.pi) - np.pi
 
             # alpha
             alpha = (rot_y_cam - np.arctan2(-y_lidar, x_lidar) + np.pi) % (2. * np.pi) - np.pi
 
-
             # score: to make clear this one is not used
             score = -1
-
 
             # add: frame number
             current_frame = tracklet.firstFrame + tracklet_nr
@@ -248,11 +221,11 @@ def get_labels_from_drive_xml(xml_path, calib_dict):
             # bbox
             # TODO convert to official kitti conversion instead of PCDet conversion (https://github.com/open-mmlab/OpenPCDet)
             x_cam, y_cam, z_cam = loc_camera
-            boxes3d_cam=np.array([[x_cam, y_cam, z_cam, l, h, w, rot_y_cam]])
+            boxes3d_cam = np.array([[x_cam, y_cam, z_cam, l, h, w, rot_y_cam]])
             cam_2d_box = boxes3d_camera_to_imageboxes(boxes3d=boxes3d_cam, calib_dict=calib_dict)
             # slight deviation example: out: [ 75.5708 , 192.00551, 273.77695, 278.5485 ], GT: [75.43, 192.52, 273.65, 277.52]
 
-            label_dict={
+            label_dict = {
                 "type": type_object,
                 "truncated": truncated,
                 "occluded": occluded,
@@ -268,26 +241,8 @@ def get_labels_from_drive_xml(xml_path, calib_dict):
 
             label_per_frame[current_frame].append(label_dict)
 
-
-
-
-
-
-
-
-
-
         # this part is inspired by kitti object development kit matlab code: computeBox3D
         # h, w, l = tracklet.size
-
-
-
-
-
-
-
-
-
 
         # # loop over all data in tracklet
         # for translation, rotation, state, occlusion, truncation, amtOcclusion, amtBorders, absoluteFrameNumber \
@@ -339,8 +294,6 @@ def get_labels_from_drive_xml(xml_path, calib_dict):
         #     # calculate alpha: Observation angle of object, ranging [-pi..pi]
         #     alpha = (rot_y_cam- np.arctan2(-y, x) +np.pi ) % (2.*np.pi) - np.pi
 
-
-
         # end: for all frames in track
     # end: for all tracks
 
@@ -350,11 +303,8 @@ def get_labels_from_drive_xml(xml_path, calib_dict):
     # K=calib_dict['P2'].reshape(3,4)[:,:3]
 
     # loop over frames
-    label_list=defaultdict(list)
+    label_list = defaultdict(list)
     for frame_number, labels in label_per_frame.items():
-        label_list[frame_number] = label_2_text(kitti_labels_dicts=labels,frame_nr=frame_number)
-
+        label_list[frame_number] = label_2_text(kitti_labels_dicts=labels, frame_nr=frame_number)
 
     return label_list
-
-

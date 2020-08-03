@@ -1,20 +1,20 @@
 import os
 from utils.create_position import Oxts_object
+from typing import DefaultDict
 
-
-def write_txt_to_file(ouput_txt, output_dir, output_filename):
+def write_txt_to_file(ouput_txt: str, output_dir: str, output_filename: str):
     with open(os.path.join(output_dir, output_filename), 'w') as file:
         file.write(ouput_txt)
 
 
-def write_calib_file(calib_dict, output_dir, output_filename):
+def write_calib_file(calib_dict, output_dir: str, output_filename: str):
     P0 = " ".join(map(str, calib_dict['P0'].tolist()))
     P1 = " ".join(map(str, calib_dict['P1'].tolist()))
     P2 = " ".join(map(str, calib_dict['P2'].tolist()))  # " ".join(map(str, ECP_JSON['cam_info']['P']))
     P3 = " ".join(map(str, calib_dict['P3'].tolist()))
-    R0 = " ".join(map(str, calib_dict['R0'].tolist()))  # " ".join(map(str, ECP_JSON['cam_info']['R']))
-    tr_velo = " ".join(map(str, calib_dict['tr_velo'].tolist()))  # " ".join(map(str, kitti_tf))
-    tr_imu = " ".join(map(str, calib_dict['tr_imu'].tolist()))  # ""
+    R0 = " ".join(map(str, calib_dict['R0_rect'].tolist()))  # " ".join(map(str, ECP_JSON['cam_info']['R']))
+    tr_velo = " ".join(map(str, calib_dict['Tr_velo_to_cam'].tolist()))  # " ".join(map(str, kitti_tf))
+    tr_imu = " ".join(map(str, calib_dict['Tr_imu_to_velo'].tolist()))  # ""
     kitti_format = "P0: %s\n" \
                    "P1: %s\n" \
                    "P2: %s\n" \
