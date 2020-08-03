@@ -1,8 +1,9 @@
 import os
 from collections import defaultdict
 from utils.create_calib import create_calib_dict
-from utils.write_files import write_calib_file, write_txt_to_file
+from utils.write_files import write_calib_file, write_txt_to_file, write_pose_file
 from utils.create_label import get_labels_from_drive_xml
+from utils.create_position import create_position_info
 from shutil import copyfile
 from tqdm import tqdm
 
@@ -15,6 +16,7 @@ if __name__ == '__main__':
     calib_paths = defaultdict(list)
     calib= defaultdict(list)
     img_timestaps = defaultdict(list)
+    oxts_dict = defaultdict(list)
     output_dirs={
         "label_2": output_main_dir + '/object/training/label_2',
         "calib": output_main_dir + '/object/training/calib',
@@ -65,13 +67,23 @@ if __name__ == '__main__':
 
                         if not os.path.exists(output_label_path):
                             write_txt_to_file(ouput_txt=labels_per_frame, output_dir=output_dirs['label_2'], output_filename=str(drive_number + '_' + str(frame_number).zfill(10)+'.txt'))
-                    #TODO
                     pbar.update(1)
                 else:
                     if only_with_labels:
                         break
                     else:
                         pass
+
+                # get poses if avaiable for whole sequence
+                if os.path.exists(os.path.join(input_main_dir, recoding_date, drive_number, 'oxts', 'data')):
+                    orig_oxts_drive_path = os.path.join(input_main_dir, recoding_date, drive_number)
+                    oxts_with_pose = create_position_info(orig_oxts_drive_path)
+
+                    for sinle_oxts_with_pose in oxts_with_pose:
+                        oxts_dict[sinle_oxts_with_pose.path] = sinle_oxts_with_pose
+
+
+
 
 
                 # loop through images if there
@@ -99,7 +111,7 @@ if __name__ == '__main__':
                     # for every point cloud: write a calib file
                     output_calib_path = os.path.join(output_dirs['calib'], drive_number + '_' + point_cloud.replace('.bin','.txt'))
                     if not os.path.exists(output_calib_path):
-                        write_calib_file(calib_dict=calib[recoding_date], output_dir=output_dirs['calib'], output_filename=drive_number + point_cloud.replace('.bin','.txt'))
+                        write_calib_file(calib_dict=calib[recoding_date], output_dir=output_dirs['calib'], output_filename= drive_number + '_' + point_cloud.replace('.bin','.txt'))
 
 
 
@@ -108,8 +120,7 @@ if __name__ == '__main__':
                     orig_oxts_path = os.path.join(input_main_dir, recoding_date, drive_number, 'oxts', 'data', oxts_file)
                     output_oxts_path = os.path.join(output_dirs['oxts'], drive_number + oxts_file)
                     if not os.path.exists(output_oxts_path):
-                        # TODO
-                        pass
+                        write_pose_file(oxts=oxts_dict[orig_oxts_path], output_dir=str(output_dirs['oxts']), output_filename = str(drive_number + '_' + oxts_file))
 
                     pbar.update(1)
 

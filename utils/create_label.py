@@ -173,7 +173,7 @@ def get_labels_from_drive_xml(xml_path, calib_dict):
 
     # loop over tracklets per drive
     for iTracklet, tracklet in enumerate(tracklets):
-        print('tracklet {0: 3d}: {1}'.format(iTracklet, tracklet))
+        # print('tracklet {0: 3d}: {1}'.format(iTracklet, tracklet))
 
         # this part is inspired by kitti object development kit matlab code: computeBox3D
         h, w, l = tracklet.size
