@@ -139,14 +139,23 @@ if __name__ == '__main__':
                     pbar.update(1)
 
         # make val.txt
+        val_list_label = [item.replace('.txt', '') for item in sorted(os.listdir(output_dirs['label_2']))]
+        val_list_img = [item.replace('.png', '') for item in sorted(os.listdir(output_dirs['image_2']))]
+        val_list_velo = [item.replace('.bin', '') for item in sorted(os.listdir(output_dirs['velodyne']))]
+        val_list_calib = [item.replace('.txt', '') for item in sorted(os.listdir(output_dirs['calib']))]
+        val_list_oxts = [item.replace('.txt', '') for item in sorted(os.listdir(output_dirs['oxts']))]
+
         if only_with_labels:
-            val_list = sorted(os.listdir(output_dirs['label_2']))
+            val_list = sorted(set(val_list_img).intersection(val_list_velo).intersection(val_list_calib).intersection(
+                val_list_oxts).intersection(val_list_label))
             val_list = [val.replace('.txt', '') for val in val_list]
         else:
-            val_list = sorted(os.listdir(output_dirs['velodyne']))
+            val_list = sorted(set(val_list_img).intersection(val_list_velo).intersection(val_list_calib).intersection(
+                val_list_oxts))
             val_list = [val.replace('.bin', '') for val in val_list]
 
-        with open(os.path.join(output_dirs['object'], 'val.txt'), 'w') as file: # can also be saved as test.txt or train.txt or trainval.txt
+        with open(os.path.join(output_dirs['object'], 'val.txt'),
+                  'w') as file:  # can also be saved as test.txt or train.txt or trainval.txt
             [file.write("%s\n" % item) for item in val_list]
 
         with open(os.path.join(output_dirs['object'], 'trainval.txt'), 'w') as file:

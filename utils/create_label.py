@@ -152,6 +152,19 @@ def get_labels_from_drive_xml(xml_path: str, calib_dict):
     TRUNC_IN_IMAGE = 0
     TRUNC_TRUNCATED = 1
     label_per_frame = defaultdict(list)
+    kitti_to_ecp_classes = {
+        'Car': 'Car',
+        'Van': 'Van',
+        'Truck': 'Truck',
+        'Pedestrian': 'Pedestrian',
+        'Person_sitting': 'Pedestrian',
+        'Cyclist': 'Cyclist',
+        'Tram': 'Tram',
+        'Misc': 'Misc',
+        'DontCare': 'DontCare',
+        "Person (sitting)":  'Pedestrian'
+
+    }
 
     tracklets = parseXML(xml_path)
 
@@ -184,7 +197,7 @@ def get_labels_from_drive_xml(xml_path: str, calib_dict):
         """
 
         # type
-        type_object = tracklet.objectType
+        type_object = kitti_to_ecp_classes[tracklet.objectType]
 
         # dimensions
         dims = tracklet.size
