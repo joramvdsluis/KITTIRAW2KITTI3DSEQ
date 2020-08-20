@@ -1,6 +1,6 @@
 import os
 from utils.create_position import Oxts_object
-from typing import DefaultDict
+from typing import List
 
 def write_txt_to_file(ouput_txt: str, output_dir: str, output_filename: str):
     with open(os.path.join(output_dir, output_filename), 'w') as file:
@@ -27,7 +27,7 @@ def write_calib_file(calib_dict, output_dir: str, output_filename: str):
     write_txt_to_file(ouput_txt=output_calib, output_dir=output_dir, output_filename=output_filename)
 
 
-def write_pose_file(oxts: Oxts_object, output_dir: str, output_filename: str):
+def write_pose_file(oxts: List[Oxts_object], output_dir: str, output_filename: str):
     Pose2Star = " ".join(map(str, oxts.pose_to_start.flatten().tolist()))  # transform back by .reshape(4,4)
     Pose2Prev = " ".join(map(str, oxts.pose_to_prev.flatten().tolist()))
     Curr_Pose = " ".join(map(str, oxts.current_pose.flatten().tolist()))

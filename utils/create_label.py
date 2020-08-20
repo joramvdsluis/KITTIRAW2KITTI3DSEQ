@@ -1,8 +1,6 @@
 import numpy as np
 from utils.parseTrackletXML import parseXML
 from collections import defaultdict
-from utils.write_files import write_txt_to_file
-from typing import List, DefaultDict
 
 
 def xyz_camera_to_lidar_coordinate(calib_dict, lidar_points):
@@ -236,7 +234,6 @@ def get_labels_from_drive_xml(xml_path: str, calib_dict):
             x_cam, y_cam, z_cam = loc_camera
             boxes3d_cam = np.array([[x_cam, y_cam, z_cam, l, h, w, rot_y_cam]])
             cam_2d_box = boxes3d_camera_to_imageboxes(boxes3d=boxes3d_cam, calib_dict=calib_dict)
-            # slight deviation example: out: [ 75.5708 , 192.00551, 273.77695, 278.5485 ], GT: [75.43, 192.52, 273.65, 277.52]
 
             label_dict = {
                 "type": type_object,
@@ -254,66 +251,6 @@ def get_labels_from_drive_xml(xml_path: str, calib_dict):
 
             label_per_frame[current_frame].append(label_dict)
 
-        # this part is inspired by kitti object development kit matlab code: computeBox3D
-        # h, w, l = tracklet.size
-
-        # # loop over all data in tracklet
-        # for translation, rotation, state, occlusion, truncation, amtOcclusion, amtBorders, absoluteFrameNumber \
-        #         in tracklet:
-        #
-        #     # determine if object is in the image; otherwise continue
-        #     if truncation not in (TRUNC_IN_IMAGE, TRUNC_TRUNCATED):
-        #         continue
-        #
-        #     # re-create 3D bounding box in velodyne coordinate system
-        #     yaw = rotation[2]  # other rotations are 0 in all xml files I checked
-        #     assert np.abs(rotation[:2]).sum() == 0, 'object rotations other than yaw given!'
-        #     rotMat = np.array([
-        #         [np.cos(yaw), -np.sin(yaw), 0.0],
-        #         [np.sin(yaw), np.cos(yaw), 0.0],
-        #         [0.0, 0.0, 1.0]])
-        #     cornerPosInVelo = np.dot(rotMat, trackletBox) + np.tile(translation, (8, 1)).T
-        #
-        #     pts_2d=np.dot(calib_dict['P2'].reshape(3,4),cornerPosInVelo)
-        #
-        #
-        #
-        #     # calc yaw as seen from the camera (i.e. 0 degree = facing away from cam), as opposed to
-        #     #   car-centered yaw (i.e. 0 degree = same orientation as car).
-        #     #   makes quite a difference for objects in periphery!
-        #     # Result is in [0, 2pi]
-        #     x, y, z = translation # translation wrt. Velodyne coordinates
-        #     yawVisual = (yaw - np.arctan2(y, x)) % (2.*np.pi)
-        #
-        #
-        #     # translations are in lidar coordinate frame:
-        #     [[x_cam, y_cam, z_cam]]=xyz_lidar_to_camera_coordinate(calib_dict, np.array([translation]))
-        #
-        #
-        #     # The
-        #     # difference between rotation_y and alpha is, that rotation_y is directly
-        #     # given in camera coordinates, while alpha also considers the vector from the
-        #     # camera center to the object center, to compute the relative orientation of
-        #     # the object with respect to the camera. For example, a car which is facing
-        #     # along the X-axis of the camera coordinate system corresponds to rotation_y=0,
-        #     # no matter where it is located in the X/Z plane (bird's eye view), while
-        #     # alpha is zero only, when this object is located along the Z-axis of the
-        #     # camera. When moving the car away from the Z-axis, the observation angle
-        #     # will change.
-        #
-        #     # calculate rotation y
-        #     rot_y_cam = ((np.matmul(np.array([yaw]), calib_dict['Tr_velo_to_cam'].reshape(3,4))+np.pi/2)[0][1]+np.pi) % (2*np.pi) -np.pi
-        #
-        #     # calculate alpha: Observation angle of object, ranging [-pi..pi]
-        #     alpha = (rot_y_cam- np.arctan2(-y, x) +np.pi ) % (2.*np.pi) - np.pi
-
-        # end: for all frames in track
-    # end: for all tracks
-
-    # yaw=tracklets[2].rots[21]
-    # x, y, z = tracklets[2].trans[21]
-    # h, w, l = tracklets[2].size
-    # K=calib_dict['P2'].reshape(3,4)[:,:3]
 
     # loop over frames
     label_list = defaultdict(list)

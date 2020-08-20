@@ -6,6 +6,8 @@ import hashlib
 import os
 import sys
 from tqdm import tqdm
+import pickle
+
 
 
 def chunk_reader(fobj, chunk_size=1024):
@@ -32,7 +34,8 @@ def get_hash(filename, first_chunk_only=False, hash=hashlib.sha1):
     return hashed
 
 
-def check_for_duplicates(paths, filetype='.bin', hash=hashlib.sha1):
+def check_for_duplicates(paths, filetype='.bin', hash=hashlib.sha1,pickle_path=None):
+    duplicate_dict=defaultdict(list)
     hashes_by_size = defaultdict(list)  # dict of size_in_bytes: [full_path_to_file1, full_path_to_file2, ]
     hashes_on_1k = defaultdict(list)  # dict of (hash1k, size_in_bytes): [full_path_to_file1, full_path_to_file2, ]
     hasesh_by_name = defaultdict(list)
@@ -41,9 +44,8 @@ def check_for_duplicates(paths, filetype='.bin', hash=hashlib.sha1):
     nr_of_files=0
     for path in paths:
         for dirpath, dirnames, filenames in os.walk(path):
-            print(dirpath)
+            # print(dirpath)
             if ('0001' in dirpath and 'image_02' in dirpath) or 'image_2' in dirpath:
-                print("wwwooo")
                 nr_of_files += len(filenames)
 
     with tqdm(total=nr_of_files) as pbar:
@@ -101,11 +103,19 @@ def check_for_duplicates(paths, filetype='.bin', hash=hashlib.sha1):
                     duplicate = hashes_full.get(full_hash)
                     if duplicate:
                         print("Duplicate found: {} and {}".format(filename, duplicate))
+                        duplicate_dict[duplicate] = filename
+
                     else:
                         hashes_full[full_hash] = filename
                 except (OSError,):
                     # the file access might've changed till the exec point got here
                     continue
+
+    if pickle_path is not None:
+        with open(pickle_path + 'duplicates.pkl', 'wb') as f:
+            pickle.dump(duplicate_dict, f)
+
+    return duplicate_dict
 
 
 if __name__ == "__main__":
@@ -114,7 +124,8 @@ if __name__ == "__main__":
     # original_root = '/home/jrvandersluis/Downloads/test2/'
 
     # whole_dataset_root = '/data2/KITTI_RAW_sync/2011_09_26/2011_09_26_drive_0001_sync/image_02/data/0000000021.png'
-    whole_dataset_root = '/data2/KITTI_RAW_sync/'
+    whole_dataset_root = '/data2/KITTI_RAW_KITTI_FORMAT_whole/object/training/image_2/'
     # whole_dataset_root = '/home/jrvandersluis/Downloads/test1/'
     filetype='.png'
-    check_for_duplicates(paths=[original_root, whole_dataset_root], filetype=filetype)
+    pickle_path = os.path.dirname(os.path.dirname(os.path.dirname(whole_dataset_root))) + '/'
+    duplicate_dict= check_for_duplicates(paths=[original_root, whole_dataset_root], filetype=filetype,pickle_path=pickle_path)
